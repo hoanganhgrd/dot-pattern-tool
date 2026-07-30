@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dot Pattern Generator — Everfit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E0E0E;
+    --panel:#161616;
+    --panel-2:#1D1D1D;
+    --line:#2A2A2A;
+    --accent:#C8F135;
+    --text:#F2F2F0;
+    --text-dim:#8C8C8C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;height:100%;}
+  h1,h2,h3,.label-head{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;}
+  .app{display:flex;height:100vh;min-height:640px;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:320px;flex-shrink:0;background:var(--panel);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+  }
+  .sidebar-header{padding:22px 20px 14px;border-bottom:1px solid var(--line);}
+  .sidebar-header h1{font-size:22px;font-weight:700;margin:0 0 2px;color:var(--text);}
+  .sidebar-header p{margin:0;font-size:12px;color:var(--text-dim);letter-spacing:.03em;}
+
+  .section{padding:18px 20px;border-bottom:1px solid var(--line);}
+  .section h3{font-size:13px;font-weight:600;color:var(--accent);margin:0 0 12px;letter-spacing:.06em;}
+
+  .upload-box{
+    border:1.5px dashed var(--line);border-radius:8px;padding:18px;text-align:center;
+    cursor:pointer;transition:border-color .15s ease, background .15s ease;
+    font-size:12.5px;color:var(--text-dim);
+  }
+  .upload-box:hover{border-color:var(--accent);background:rgba(200,241,53,0.04);}
+  .upload-box.dragover{border-color:var(--accent);background:rgba(200,241,53,0.08);color:var(--text);}
+  .upload-box input{display:none;}
+  .upload-box .fname{margin-top:6px;color:var(--accent);font-weight:600;word-break:break-all;}
+
+  .shape-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .shape-btn{
+    flex:1;min-width:60px;padding:7px 4px;font-size:11px;border-radius:6px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
+    cursor:pointer;font-family:'Barlow',sans-serif;font-weight:500;transition:.12s;
+  }
+  .shape-btn:hover{color:var(--text);border-color:#444;}
+  .shape-btn.active{background:var(--accent);color:#0E0E0E;border-color:var(--accent);font-weight:600;}
+
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .field-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .field-row label{font-size:12.5px;color:var(--text);font-weight:500;}
+  .field-row .val{font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{
+    width:100%;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #0E0E0E;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #0E0E0E;
+  }
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .toggle-row:last-child{margin-bottom:0;}
+  .toggle-row label{font-size:12.5px;color:var(--text);}
+  .switch{position:relative;width:36px;height:20px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-pill{position:absolute;inset:0;background:var(--line);border-radius:20px;cursor:pointer;transition:.15s;}
+  .slider-pill:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--text-dim);border-radius:50%;transition:.15s;}
+  .switch input:checked + .slider-pill{background:rgba(200,241,53,0.25);}
+  .switch input:checked + .slider-pill:before{transform:translateX(16px);background:var(--accent);}
+
+  .color-row{display:flex;gap:10px;}
+  .color-field{flex:1;}
+  .color-field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;}
+  .swatch{
+    width:100%;height:32px;border-radius:6px;border:1px solid var(--line);cursor:pointer;padding:0;
+  }
+
+  .grid-row{display:flex;gap:6px;}
+  .grid-row .shape-btn{flex:1;}
+
+  .btn{
+    width:100%;padding:11px;border-radius:7px;border:none;cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px;
+    letter-spacing:.04em;text-transform:uppercase;transition:.12s;
+  }
+  .btn-primary{background:var(--accent);color:#0E0E0E;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--text);margin-top:8px;}
+  .btn-secondary:hover{border-color:var(--text-dim);}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{margin-top:0;}
+
+  /* ---------- Canvas area ---------- */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:
+    radial-gradient(circle at 50% 40%, #121212 0%, #0A0A0A 100%);
+    overflow:hidden;
+  }
+  #previewCanvas{max-width:92%;max-height:88%;display:block;}
+  .stage-hint{
+    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+    font-size:11.5px;color:var(--text-dim);letter-spacing:.02em;
+    background:rgba(0,0,0,0.4);padding:6px 14px;border-radius:20px;border:1px solid var(--line);
+  }
+  .count-badge{
+    position:absolute;top:18px;right:20px;font-size:11px;color:var(--text-dim);
+    background:rgba(0,0,0,0.4);padding:5px 12px;border-radius:20px;border:1px solid var(--line);
+    font-variant-numeric:tabular-nums;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Dot Pattern Generator</h1>
+      <p>Turn any shape into the dot-matrix mark</p>
+    </div>
+
+    <div class="section">
+      <h3>Source</h3>
+      <div class="upload-box" id="uploadBox">
+        Drop an image (PNG with transparency works best) or click to upload
+        <input type="file" id="fileInput" accept="image/*">
+        <div class="fname" id="fname"></div>
+      </div>
+      <div class="shape-row">
+        <button class="shape-btn active" data-shape="flash">Flash mark</button>
+        <button class="shape-btn" data-shape="arrow">Arrow</button>
+        <button class="shape-btn" data-shape="text">Type "F"</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Grid</h3>
+      <div class="grid-row" style="margin-bottom:14px;">
+        <button class="shape-btn active" data-grid="square">Square</button>
+        <button class="shape-btn" data-grid="hex">Staggered</button>
+      </div>
+      <div class="field">
+        <div class="field-row"><label>Spacing</label><span class="val" id="spacingVal">14px</span></div>
+        <input type="range" id="spacing" min="6" max="36" value="14">
+      </div>
+      <div class="field">
+        <div class="field-row"><label>Dot size</label><span class="val" id="dotSizeVal">62%</span></div>
+        <input type="range" id="dotSize" min="20" max="95" value="62">
+      </div>
+      <div class="field">
+        <div class="field-row"><label>Stroke width</label><span class="val" id="strokeVal">1.2px</span></div>
+        <input type="range" id="stroke" min="4" max="30" value="12">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Shape detection</h3>
+      <div class="field">
+        <div class="field-row"><label>Threshold</label><span class="val" id="threshVal">50%</span></div>
+        <input type="range" id="thresh" min="5" max="95" value="50">
+      </div>
+      <div class="toggle-row">
+        <label>Invert mask</label>
+        <div class="switch"><input type="checkbox" id="invert"><div class="slider-pill"></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Edge scatter</h3>
+      <div class="field">
+        <div class="field-row"><label>Amount</label><span class="val" id="scatterVal">28%</span></div>
+        <input type="range" id="scatter" min="0" max="100" value="28">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="reseedBtn" style="margin-top:0;">Reshuffle scatter</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Style</h3>
+      <div class="color-row">
+        <div class="color-field">
+          <label>Background</label>
+          <input type="color" class="swatch" id="bgColor" value="#0E0E0E">
+        </div>
+        <div class="color-field">
+          <label>Dots</label>
+          <input type="color" class="swatch" id="dotColor" value="#FFFFFF">
+        </div>
+      </div>
+      <div class="toggle-row" style="margin-top:14px;">
+        <label>Filled dots (not outline)</label>
+        <div class="switch"><input type="checkbox" id="filled"><div class="slider-pill"></div></div>
+      </div>
+      <div class="toggle-row">
+        <label>Transparent background</label>
+        <div class="switch"><input type="checkbox" id="transparentBg"><div class="slider-pill"></div></div>
+      </div>
+    </div>
+
+    <div class="section" style="border-bottom:none;">
+      <h3>Export</h3>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="exportSvg">Export SVG</button>
+        <button class="btn btn-primary" id="exportPng">Export PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="previewCanvas"></canvas>
+    <div class="count-badge" id="countBadge">0 dots</div>
+    <div class="stage-hint">Upload a logo / silhouette on the left to remap the pattern to it</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('previewCanvas');
+  const ctx = canvas.getContext('2d');
+  const CANVAS_W = 1400, CANVAS_H = 760;
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+
+  // offscreen sampling canvas holds the current mask source
+  const sampleCanvas = document.createElement('canvas');
+  sampleCanvas.width = CANVAS_W;
+  sampleCanvas.height = CANVAS_H;
+  const sctx = sampleCanvas.getContext('2d');
+
+  let maskImageData = null;
+  let hasAlpha = false;
+  let seed = 1234;
+
+  function seededRandom(){
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return (seed % 10000) / 10000;
+  }
+
+  // ---------- built-in demo shapes ----------
+  function drawFlashMark(c){
+    c.clearRect(0,0,CANVAS_W,CANVAS_H);
+    c.fillStyle = '#fff';
+    c.save();
+    // two chevron bands reminiscent of the reference screenshot
+    c.beginPath();
+    c.moveTo(120, 420); c.lineTo(560, 40); c.lineTo(1360, 40); c.lineTo(1360, 90);
+    c.lineTo(760, 380); c.lineTo(1360, 380); c.lineTo(1360, 430);
+    c.lineTo(660, 430); c.lineTo(180, 470); c.closePath();
+    c.fill();
+
+    c.beginPath();
+    c.moveTo(560, 470); c.lineTo(900, 470); c.lineTo(1360, 460); c.lineTo(1360, 500);
+    c.lineTo(720, 760); c.lineTo(560, 760); c.lineTo(1000, 500); c.lineTo(560,500);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+  function drawArrow(c){
+    c.clearRect(0,0,CANVAS_W,CANVAS_H);
+    c.fillStyle = '#fff';
+    c.beginPath();
+    c.moveTo(150,380);
+    c.lineTo(950,80);
+    c.lineTo(950,240);
+    c.lineTo(1300,240);
+    c.lineTo(1300,520);
+    c.lineTo(950,520);
+    c.lineTo(950,680);
+    c.closePath();
+    c.fill();
+  }
+  function drawTypeF(c){
+    c.clearRect(0,0,CANVAS_W,CANVAS_H);
+    c.fillStyle = '#fff';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = '700 720px Barlow Condensed, sans-serif';
+    c.fillText('F', CANVAS_W/2, CANVAS_H/2 + 40);
+  }
+
+  function loadMaskFromCanvasFn(drawFn){
+    sctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+    drawFn(sctx);
+    maskImageData = sctx.getImageData(0,0,CANVAS_W,CANVAS_H);
+    hasAlpha = false; // shapes drawn are solid white on transparent -> use alpha channel actually
+    hasAlpha = true;
+    render();
+  }
+
+  function loadMaskFromImage(img){
+    sctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+    // fit image into canvas, centered, preserving aspect ratio
+    const scale = Math.min(CANVAS_W/img.width, CANVAS_H/img.height) * 0.92;
+    const w = img.width*scale, h = img.height*scale;
+    const x = (CANVAS_W-w)/2, y = (CANVAS_H-h)/2;
+    sctx.drawImage(img, x, y, w, h);
+    maskImageData = sctx.getImageData(0,0,CANVAS_W,CANVAS_H);
+    // detect if image actually has transparency
+    let foundAlpha = false;
+    const d = maskImageData.data;
+    for(let i=3;i<d.length;i+=4*97){ if(d[i] < 250){ foundAlpha = true; break; } }
+    hasAlpha = foundAlpha;
+    render();
+  }
+
+  // ---------- sampling ----------
+  function coverageAt(px, py, kernel){
+    if(!maskImageData) return 0;
+    const d = maskImageData.data;
+    let sum = 0, n = 0;
+    const half = kernel/2;
+    const step = Math.max(1, Math.floor(kernel/3));
+    for(let dy=-half; dy<=half; dy+=step){
+      for(let dx=-half; dx<=half; dx+=step){
+        const x = Math.round(px+dx), y = Math.round(py+dy);
+        if(x<0||y<0||x>=CANVAS_W||y>=CANVAS_H) continue;
+        const idx = (y*CANVAS_W+x)*4;
+        const a = d[idx+3]/255;
+        if(hasAlpha){
+          sum += a; n++;
+        } else {
+          const bright = (d[idx]+d[idx+1]+d[idx+2])/3/255;
+          sum += (1-bright); // assume dark shape on light bg by default
+          n++;
+        }
+      }
+    }
+    return n ? sum/n : 0;
+  }
+
+  // ---------- controls ----------
+  const els = {
+    spacing: document.getElementById('spacing'),
+    dotSize: document.getElementById('dotSize'),
+    stroke: document.getElementById('stroke'),
+    thresh: document.getElementById('thresh'),
+    scatter: document.getElementById('scatter'),
+    invert: document.getElementById('invert'),
+    filled: document.getElementById('filled'),
+    bgColor: document.getElementById('bgColor'),
+    dotColor: document.getElementById('dotColor'),
+    transparentBg: document.getElementById('transparentBg'),
+  };
+  const vals = {
+    spacingVal: document.getElementById('spacingVal'),
+    dotSizeVal: document.getElementById('dotSizeVal'),
+    strokeVal: document.getElementById('strokeVal'),
+    threshVal: document.getElementById('threshVal'),
+    scatterVal: document.getElementById('scatterVal'),
+  };
+
+  let gridMode = 'square';
+  document.querySelectorAll('[data-grid]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-grid]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      gridMode = btn.dataset.grid;
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-shape]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-shape]').forEach(b=>{ if(b.dataset.shape) b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('fname').textContent = '';
+      const shape = btn.dataset.shape;
+      if(shape==='flash') loadMaskFromCanvasFn(drawFlashMark);
+      if(shape==='arrow') loadMaskFromCanvasFn(drawArrow);
+      if(shape==='text') loadMaskFromCanvasFn(drawTypeF);
+    });
+  });
+
+  Object.values(els).forEach(el=>{
+    el.addEventListener('input', render);
+  });
+
+  document.getElementById('reseedBtn').addEventListener('click', ()=>{
+    seed = Math.floor(Math.random()*100000)+1;
+    render();
+  });
+
+  // upload
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  uploadBox.addEventListener('click', ()=>fileInput.click());
+  uploadBox.addEventListener('dragover', e=>{ e.preventDefault(); uploadBox.classList.add('dragover'); });
+  uploadBox.addEventListener('dragleave', ()=> uploadBox.classList.remove('dragover'));
+  uploadBox.addEventListener('drop', e=>{
+    e.preventDefault();
+    uploadBox.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{
+    if(e.target.files[0]) handleFile(e.target.files[0]);
+  });
+  function handleFile(file){
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        document.getElementById('fname').textContent = file.name;
+        document.querySelectorAll('[data-shape]').forEach(b=>b.classList.remove('active'));
+        loadMaskFromImage(img);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---------- render ----------
+  let lastDots = [];
+
+  function render(){
+    const spacing = +els.spacing.value;
+    const dotSizePct = +els.dotSize.value/100;
+    const strokeW = +els.stroke.value/10;
+    const thresh = +els.thresh.value/100;
+    const scatterAmt = +els.scatter.value/100;
+    const invert = els.invert.checked;
+    const filled = els.filled.checked;
+    const bg = els.bgColor.value;
+    const dotColor = els.dotColor.value;
+    const transparentBg = els.transparentBg.checked;
+
+    vals.spacingVal.textContent = spacing+'px';
+    vals.dotSizeVal.textContent = Math.round(dotSizePct*100)+'%';
+    vals.strokeVal.textContent = strokeW.toFixed(1)+'px';
+    vals.threshVal.textContent = Math.round(thresh*100)+'%';
+    vals.scatterVal.textContent = Math.round(scatterAmt*100)+'%';
+
+    ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+    if(!transparentBg){
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,CANVAS_W,CANVAS_H);
+    }
+
+    if(!maskImageData){ document.getElementById('countBadge').textContent = '0 dots'; return; }
+
+    const radius = (spacing/2) * dotSizePct;
+    ctx.strokeStyle = dotColor;
+    ctx.fillStyle = dotColor;
+    ctx.lineWidth = strokeW;
+
+    let localSeed = 1234;
+    function rnd(){
+      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
+      return (localSeed % 10000) / 10000;
+    }
+
+    const dots = [];
+    let row = 0;
+    for(let y = spacing/2; y < CANVAS_H; y += spacing*0.87){
+      const offset = (gridMode==='hex' && row%2===1) ? spacing/2 : 0;
+      for(let x = spacing/2 + offset; x < CANVAS_W; x += spacing){
+        let cov = coverageAt(x, y, spacing*0.9);
+        if(invert) cov = 1 - cov;
+
+        if(cov >= thresh){
+          dots.push({x, y, r: radius, alpha: 1});
+        } else if(scatterAmt > 0 && cov > thresh*0.15){
+          const proximity = cov/thresh; // 0..1 approaching threshold
+          const prob = scatterAmt * proximity * proximity;
+          if(rnd() < prob){
+            const jitter = spacing*0.35;
+            const jx = x + (rnd()-0.5)*jitter;
+            const jy = y + (rnd()-0.5)*jitter;
+            const jr = radius * (0.35 + rnd()*0.5);
+            dots.push({x:jx, y:jy, r:jr, alpha: 0.35+rnd()*0.4});
+          }
+        }
+      }
+      row++;
+    }
+
+    dots.forEach(d=>{
+      ctx.globalAlpha = d.alpha;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, Math.max(0.4,d.r), 0, Math.PI*2);
+      if(filled) ctx.fill(); else ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+
+    lastDots = {dots, spacing, radius, strokeW, filled, dotColor, bg, transparentBg};
+    document.getElementById('countBadge').textContent = dots.length.toLocaleString()+' dots';
+  }
+
+  // ---------- export ----------
+  document.getElementById('exportPng').addEventListener('click', ()=>{
+    const link = document.createElement('a');
+    link.download = 'dot-pattern.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  document.getElementById('exportSvg').addEventListener('click', ()=>{
+    const {dots, radius, strokeW, filled, dotColor, bg, transparentBg} = lastDots;
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_W}" height="${CANVAS_H}" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">\n`;
+    if(!transparentBg){
+      svg += `<rect width="${CANVAS_W}" height="${CANVAS_H}" fill="${bg}"/>\n`;
+    }
+    dots.forEach(d=>{
+      const style = filled
+        ? `fill="${dotColor}" fill-opacity="${d.alpha.toFixed(2)}"`
+        : `fill="none" stroke="${dotColor}" stroke-width="${strokeW}" stroke-opacity="${d.alpha.toFixed(2)}"`;
+      svg += `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${d.r.toFixed(2)}" ${style}/>\n`;
+    });
+    svg += `</svg>`;
+    const blob = new Blob([svg], {type:'image/svg+xml'});
+    const link = document.createElement('a');
+    link.download = 'dot-pattern.svg';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+  });
+
+  // init
+  loadMaskFromCanvasFn(drawFlashMark);
+})();
+</script>
+</body>
+</html>
