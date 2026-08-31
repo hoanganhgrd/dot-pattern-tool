@@ -1,51 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ToolCraft — Tool suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0E0E0E;
-    --panel:#161616;
-    --panel-2:#1D1D1D;
-    --line:#2A2A2A;
-    --accent:#C8F135;
-    --text:#F2F2F0;
-    --text-dim:#8C8C8C;
+    --background:oklch(0 0 0);
+    --foreground:oklch(0.977 0 0);
+    --card:oklch(0.205 0 0);
+    --card-foreground:oklch(0.985 0 0);
+    --muted:#262626;
+    --muted-foreground:oklch(0.708 0 0);
+    --accent:#0c8ce9;
+    --accent-foreground:oklch(0.985 0 0);
+    --border:oklch(0.311 0.013 279.19);
+    --radius-md:.375rem;
+    --radius-lg:.5rem;
+    --radius-xl:.75rem;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100%;}
-  h1,h2,h3,.label-head{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;}
+  html,body{margin:0;padding:0;background:var(--background);color:var(--foreground);font-family:'Inter',ui-sans-serif,sans-serif;min-height:100%;}
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 10%, transparent) transparent;
+  }
 
-  header{padding:40px 32px 24px;border-bottom:1px solid var(--line);}
-  header h1{font-size:32px;font-weight:700;margin:0 0 6px;color:var(--text);}
-  header p{margin:0;font-size:14px;color:var(--text-dim);letter-spacing:.02em;}
+  header{padding:40px 32px 24px;border-bottom:1px solid var(--border);}
+  header h1{font-size:26px;font-weight:600;margin:0 0 6px;color:var(--foreground);letter-spacing:-.01em;}
+  header p{margin:0;font-size:14px;color:var(--muted-foreground);}
 
   main{padding:32px;max-width:1200px;margin:0 auto;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 
   .card{
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:22px;text-decoration:none;color:var(--text);display:flex;flex-direction:column;
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:22px;text-decoration:none;color:var(--foreground);display:flex;flex-direction:column;
     gap:10px;transition:border-color .15s ease, transform .15s ease, background .15s ease;
     position:relative;overflow:hidden;
   }
-  .card:not(.disabled):hover{border-color:var(--accent);transform:translateY(-2px);background:var(--panel-2);}
+  .card:not(.disabled):hover{border-color:var(--accent);transform:translateY(-2px);}
   .card.disabled{opacity:.5;cursor:not-allowed;}
   .tag{
-    align-self:flex-start;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-    color:#0E0E0E;background:var(--accent);padding:3px 9px;border-radius:20px;
+    align-self:flex-start;font-size:10.5px;font-weight:600;letter-spacing:.02em;
+    color:var(--accent-foreground);background:var(--accent);padding:3px 9px;border-radius:999px;
   }
-  .card.disabled .tag{background:var(--line);color:var(--text-dim);}
-  .card h2{font-size:20px;font-weight:600;margin:4px 0 0;color:var(--text);letter-spacing:.01em;text-transform:none;font-family:'Barlow',sans-serif;}
-  .card p{margin:0;font-size:13px;line-height:1.5;color:var(--text-dim);}
-  .card .go{margin-top:auto;font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.03em;}
-  .card.disabled .go{color:var(--text-dim);}
+  .card.disabled .tag{background:var(--muted);color:var(--muted-foreground);}
+  .card h2{font-size:18px;font-weight:600;margin:4px 0 0;color:var(--foreground);letter-spacing:-.005em;}
+  .card p{margin:0;font-size:13px;line-height:1.5;color:var(--muted-foreground);}
+  .card .go{margin-top:auto;font-size:12px;font-weight:500;color:var(--accent);}
+  .card.disabled .go{color:var(--muted-foreground);}
 
-  footer{padding:24px 32px 40px;text-align:center;color:var(--text-dim);font-size:12px;}
+  footer{padding:24px 32px 40px;text-align:center;color:var(--muted-foreground);font-size:12px;}
   footer a{color:var(--accent);text-decoration:none;}
 </style>
 </head>
