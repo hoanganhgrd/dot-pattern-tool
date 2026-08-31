@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Isometric Extrude — ToolCraft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(0 0 0);
+    --panel:oklch(0.205 0 0);
+    --panel-2:#262626;
+    --line:oklch(0.311 0.013 279.19);
+    --accent:#0c8ce9;
+    --accent-foreground:oklch(0.985 0 0);
+    --text:oklch(0.977 0 0);
+    --text-dim:oklch(0.708 0 0);
+    --radius-sm:.25rem;
+    --radius-md:.375rem;
+    --radius-lg:.5rem;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',ui-sans-serif,sans-serif;height:100%;}
+  .app{display:flex;height:100vh;min-height:640px;}
+
+  .sidebar{
+    width:330px;flex-shrink:0;background:var(--panel);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+  }
+  .sidebar-header{padding:22px 20px 14px;border-bottom:1px solid var(--line);}
+  .sidebar-header h1{font-size:20px;font-weight:600;margin:0 0 2px;color:var(--text);letter-spacing:-.01em;}
+  .sidebar-header p{margin:0;font-size:12px;color:var(--text-dim);letter-spacing:.01em;}
+
+  .section{padding:18px 20px;border-bottom:1px solid var(--line);}
+  .section h3{font-size:11px;font-weight:500;color:var(--text-dim);margin:0 0 12px;letter-spacing:.02em;}
+
+  .upload-box{
+    border:1.5px dashed var(--line);border-radius:var(--radius-md);padding:18px;text-align:center;
+    cursor:pointer;transition:border-color .15s ease, background .15s ease;
+    font-size:12.5px;color:var(--text-dim);
+  }
+  .upload-box:hover{border-color:var(--accent);background:color-mix(in oklab, var(--accent) 6%, transparent);}
+  .upload-box.dragover{border-color:var(--accent);background:color-mix(in oklab, var(--accent) 10%, transparent);color:var(--text);}
+  .upload-box input{display:none;}
+  .upload-box .fname{margin-top:6px;color:var(--accent);font-weight:600;word-break:break-all;}
+
+  .shape-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .shape-btn{
+    flex:1;min-width:60px;padding:7px 4px;font-size:11px;border-radius:var(--radius-sm);
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
+    cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;transition:.12s;
+  }
+  .shape-btn:hover{color:var(--text);border-color:#444;}
+  .shape-btn.active{background:var(--accent);color:var(--accent-foreground);border-color:var(--accent);font-weight:600;}
+
+  .dir-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .dir-btn{
+    padding:12px 6px;font-size:16px;border-radius:var(--radius-sm);
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
+    cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:.12s;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+  }
+  .dir-btn span.lbl{font-size:10.5px;font-weight:500;}
+  .dir-btn:hover{color:var(--text);border-color:#444;}
+  .dir-btn.active{background:var(--accent);color:var(--accent-foreground);border-color:var(--accent);}
+
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .field-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .field-row label{font-size:12.5px;color:var(--text);font-weight:500;}
+  .field-row .val{font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{
+    width:100%;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid var(--bg);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);
+  }
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .toggle-row:last-child{margin-bottom:0;}
+  .toggle-row label{font-size:12.5px;color:var(--text);}
+  .switch{position:relative;width:36px;height:20px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-pill{position:absolute;inset:0;background:var(--line);border-radius:20px;cursor:pointer;transition:.15s;}
+  .slider-pill:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--text-dim);border-radius:50%;transition:.15s;}
+  .switch input:checked + .slider-pill{background:color-mix(in oklab, var(--accent) 25%, transparent);}
+  .switch input:checked + .slider-pill:before{transform:translateX(16px);background:var(--accent);}
+
+  .color-row{display:flex;gap:10px;align-items:flex-end;}
+  .color-field{flex:1;}
+  .color-field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;}
+  .swatch{
+    width:100%;height:32px;border-radius:var(--radius-sm);border:1px solid var(--line);cursor:pointer;padding:0;
+  }
+
+  .btn{
+    width:100%;padding:9px 11px;border-radius:var(--radius-md);border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-weight:500;font-size:13px;transition:.12s;
+  }
+  .btn-primary{background:var(--accent);color:var(--accent-foreground);}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{margin-top:0;}
+  .hint{font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:10px;}
+
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:
+    radial-gradient(circle at 50% 40%, #0a0a0a 0%, #000 100%);
+    overflow:hidden;
+  }
+  #stageWrap{max-width:88%;max-height:86%;display:flex;}
+  #stageWrap svg{max-width:100%;max-height:100%;}
+  .stage-hint{
+    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+    font-size:11.5px;color:var(--text-dim);letter-spacing:.02em;
+    background:rgba(0,0,0,0.4);padding:6px 14px;border-radius:20px;border:1px solid var(--line);
+  }
+  .count-badge{
+    position:absolute;top:18px;right:20px;font-size:11px;color:var(--text-dim);
+    background:rgba(0,0,0,0.4);padding:5px 12px;border-radius:20px;border:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<a href="../index.html" title="Back to ToolCraft hub" style="position:fixed;top:10px;left:10px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:oklch(0.205 0 0);color:#0c8ce9;font:500 12px/1 'Inter',sans-serif;border:1px solid oklch(0.311 0.013 279.19);border-radius:8px;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.4);">&larr; Hub</a>
+
+<div class="app">
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Isometric Extrude</h1>
+      <p>Đùn vector phẳng thành khối 3D isometric</p>
+    </div>
+
+    <div class="section">
+      <h3>Nguồn vector</h3>
+      <div class="upload-box" id="uploadBox">
+        Kéo thả file .svg vào đây hoặc bấm để chọn
+        <input type="file" id="fileInput" accept=".svg,image/svg+xml">
+        <div class="fname" id="fname"></div>
+      </div>
+      <div class="shape-row">
+        <button class="shape-btn active" data-demo="gift">Hộp quà</button>
+        <button class="shape-btn" data-demo="star">Ngôi sao</button>
+        <button class="shape-btn" data-demo="shield">Khiên</button>
+      </div>
+      <div class="hint">Hoạt động tốt nhất với shape có fill đơn giản, không lỗ/không lồng nhau (icon, logo phẳng).</div>
+    </div>
+
+    <div class="section">
+      <h3>Đùn khối (extrude)</h3>
+      <div class="field">
+        <div class="field-row"><label>Độ dày</label><span class="val" id="depthVal">30%</span></div>
+        <input type="range" id="depth" min="0" max="150" value="30">
+      </div>
+      <div class="field">
+        <div class="field-row"><label>Hướng góc nhìn</label><span class="val" id="rotVal">0°</span></div>
+        <div class="dir-grid">
+          <button class="dir-btn active" data-dir="0"><span>◤</span><span class="lbl">Trên-Trái</span></button>
+          <button class="dir-btn" data-dir="90"><span>◥</span><span class="lbl">Trên-Phải</span></button>
+          <button class="dir-btn" data-dir="270"><span>◣</span><span class="lbl">Dưới-Trái</span></button>
+          <button class="dir-btn" data-dir="180"><span>◢</span><span class="lbl">Dưới-Phải</span></button>
+        </div>
+        <input type="range" id="rotation" min="0" max="359" value="0" style="margin-top:10px;">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Chất liệu &amp; đổ bóng</h3>
+      <div class="field">
+        <div class="field-row"><label>Mặt phải (sáng)</label><span class="val" id="rightShadeVal">15%</span></div>
+        <input type="range" id="rightShade" min="0" max="70" value="15">
+      </div>
+      <div class="field">
+        <div class="field-row"><label>Mặt trái (tối)</label><span class="val" id="leftShadeVal">38%</span></div>
+        <input type="range" id="leftShade" min="0" max="85" value="38">
+      </div>
+      <div class="toggle-row">
+        <label>Dùng 1 màu duy nhất</label>
+        <div class="switch"><input type="checkbox" id="flatColor"><div class="slider-pill"></div></div>
+      </div>
+      <div class="color-row">
+        <div class="color-field">
+          <label>Màu phủ</label>
+          <input type="color" class="swatch" id="flatColorPick" value="#33C7E0">
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="border-bottom:none;">
+      <h3>Nền &amp; xuất file</h3>
+      <div class="color-row" style="margin-bottom:12px;">
+        <div class="color-field">
+          <label>Màu nền</label>
+          <input type="color" class="swatch" id="bgColor" value="#0E0E0E">
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label>Nền trong suốt</label>
+        <div class="switch"><input type="checkbox" id="transparentBg"><div class="slider-pill"></div></div>
+      </div>
+      <div class="toggle-row">
+        <label>Bóng đổ dưới đáy</label>
+        <div class="switch"><input type="checkbox" id="showShadow" checked><div class="slider-pill"></div></div>
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-primary" id="exportSvg">Export SVG</button>
+        <button class="btn btn-primary" id="exportPng">Export PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div id="stageWrap"></div>
+    <div class="count-badge" id="countBadge">0 mặt</div>
+    <div class="stage-hint">Upload SVG hoặc chọn mẫu ở bên trái, chỉnh độ dày &amp; hướng để đùn thành khối isometric</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+
+  // ---------------------------------------------------------------
+  // SVG path 'd' parser + flattener (M/L/H/V/C/S/Q/T/A/Z, abs+rel)
+  // ---------------------------------------------------------------
+  function parsePathD(d){
+    let i = 0;
+    const n = d.length;
+    function skipSep(){ while(i<n && /[\s,]/.test(d[i])) i++; }
+    function isNumStart(){ skipSep(); return i<n && /[-+.\d]/.test(d[i]); }
+    function readNumber(){
+      skipSep();
+      const start = i;
+      if(d[i]==='+'||d[i]==='-') i++;
+      while(i<n && /\d/.test(d[i])) i++;
+      if(d[i]==='.'){ i++; while(i<n && /\d/.test(d[i])) i++; }
+      if(d[i]==='e'||d[i]==='E'){ i++; if(d[i]==='+'||d[i]==='-') i++; while(i<n && /\d/.test(d[i])) i++; }
+      return parseFloat(d.slice(start,i));
+    }
+    function readFlag(){ skipSep(); const c=d[i]; i++; return c==='1'?1:0; }
+
+    const subpaths = [];
+    let cur = null;
+    let cx=0, cy=0, sx=0, sy=0;
+    let prevCmd='', prevCtrl=null;
+    function pushPoint(x,y){ cur.push([x,y]); }
+    function startSubpath(x,y){ if(cur && cur.length>1) subpaths.push(cur); cur=[[x,y]]; }
+    function cubicTo(x1,y1,x2,y2,x,y){
+      const steps=16;
+      for(let t=1;t<=steps;t++){
+        const tt=t/steps, mt=1-tt;
+        pushPoint(
+          mt*mt*mt*cx + 3*mt*mt*tt*x1 + 3*mt*tt*tt*x2 + tt*tt*tt*x,
+          mt*mt*mt*cy + 3*mt*mt*tt*y1 + 3*mt*tt*tt*y2 + tt*tt*tt*y
+        );
+      }
+    }
+    function quadTo(x1,y1,x,y){
+      const steps=16;
+      for(let t=1;t<=steps;t++){
+        const tt=t/steps, mt=1-tt;
+        pushPoint(mt*mt*cx + 2*mt*tt*x1 + tt*tt*x, mt*mt*cy + 2*mt*tt*y1 + tt*tt*y);
+      }
+    }
+    function arcTo(rx,ry,rot,large,sweep,x,y){
+      if(rx===0||ry===0 || (cx===x && cy===y)){ pushPoint(x,y); return; }
+      const phi = rot*Math.PI/180;
+      const dx2=(cx-x)/2, dy2=(cy-y)/2;
+      const x1p = Math.cos(phi)*dx2 + Math.sin(phi)*dy2;
+      const y1p = -Math.sin(phi)*dx2 + Math.cos(phi)*dy2;
+      rx=Math.abs(rx); ry=Math.abs(ry);
+      let rxs=rx*rx, rys=ry*ry;
+      const x1ps=x1p*x1p, y1ps=y1p*y1p;
+      const l = x1ps/rxs + y1ps/rys;
+      if(l>1){ const sq=Math.sqrt(l); rx*=sq; ry*=sq; rxs=rx*rx; rys=ry*ry; }
+      const sign = large===sweep? -1:1;
+      let num = rxs*rys - rxs*y1ps - rys*x1ps;
+      if(num<0) num=0;
+      const den = (rxs*y1ps+rys*x1ps) || 1;
+      const co = sign*Math.sqrt(num/den);
+      const cxp = co*rx*y1p/ry;
+      const cyp = -co*ry*x1p/rx;
+      const cx0 = Math.cos(phi)*cxp - Math.sin(phi)*cyp + (cx+x)/2;
+      const cy0 = Math.sin(phi)*cxp + Math.cos(phi)*cyp + (cy+y)/2;
+      function ang(ux,uy,vx,vy){
+        const dot=ux*vx+uy*vy;
+        const len=Math.sqrt((ux*ux+uy*uy)*(vx*vx+vy*vy))||1;
+        let a=Math.acos(Math.min(1,Math.max(-1,dot/len)));
+        if(ux*vy-uy*vx<0) a=-a;
+        return a;
+      }
+      const theta1 = ang(1,0,(x1p-cxp)/rx,(y1p-cyp)/ry);
+      let dtheta = ang((x1p-cxp)/rx,(y1p-cyp)/ry,(-x1p-cxp)/rx,(-y1p-cyp)/ry);
+      if(!sweep && dtheta>0) dtheta-=2*Math.PI;
+      if(sweep && dtheta<0) dtheta+=2*Math.PI;
+      const steps=24;
+      for(let t=1;t<=steps;t++){
+        const th = theta1 + dtheta*t/steps;
+        pushPoint(
+          Math.cos(phi)*rx*Math.cos(th) - Math.sin(phi)*ry*Math.sin(th) + cx0,
+          Math.sin(phi)*rx*Math.cos(th) + Math.cos(phi)*ry*Math.sin(th) + cy0
+        );
+      }
+    }
+
+    while(i<n){
+      skipSep();
+      if(i>=n) break;
+      let cmd = d[i];
+      if(/[A-Za-z]/.test(cmd)){ i++; } else { cmd = (prevCmd==='M')?'L':(prevCmd==='m')?'l':prevCmd; }
+      switch(cmd){
+        case 'M': { const x=readNumber(), y=readNumber(); cx=x; cy=y; sx=x; sy=y; startSubpath(x,y);
+          while(isNumStart()){ const x2=readNumber(), y2=readNumber(); cx=x2; cy=y2; pushPoint(x2,y2); }
+          prevCmd='M'; break; }
+        case 'm': { const x=cx+readNumber(), y=cy+readNumber(); cx=x; cy=y; sx=x; sy=y; startSubpath(x,y);
+          while(isNumStart()){ const x2=cx+readNumber(), y2=cy+readNumber(); cx=x2; cy=y2; pushPoint(x2,y2); }
+          prevCmd='m'; break; }
+        case 'L': do{ const x=readNumber(), y=readNumber(); cx=x; cy=y; pushPoint(x,y);}while(isNumStart()); prevCmd='L'; break;
+        case 'l': do{ const x=cx+readNumber(), y=cy+readNumber(); cx=x; cy=y; pushPoint(x,y);}while(isNumStart()); prevCmd='l'; break;
+        case 'H': do{ cx=readNumber(); pushPoint(cx,cy);}while(isNumStart()); prevCmd='H'; break;
+        case 'h': do{ cx+=readNumber(); pushPoint(cx,cy);}while(isNumStart()); prevCmd='h'; break;
+        case 'V': do{ cy=readNumber(); pushPoint(cx,cy);}while(isNumStart()); prevCmd='V'; break;
+        case 'v': do{ cy+=readNumber(); pushPoint(cx,cy);}while(isNumStart()); prevCmd='v'; break;
+        case 'C': do{ const x1=readNumber(),y1=readNumber(),x2=readNumber(),y2=readNumber(),x=readNumber(),y=readNumber();
+          cubicTo(x1,y1,x2,y2,x,y); prevCtrl=[x2,y2]; cx=x; cy=y;}while(isNumStart()); prevCmd='C'; break;
+        case 'c': do{ const x1=cx+readNumber(),y1=cy+readNumber(),x2=cx+readNumber(),y2=cy+readNumber(),x=cx+readNumber(),y=cy+readNumber();
+          cubicTo(x1,y1,x2,y2,x,y); prevCtrl=[x2,y2]; cx=x; cy=y;}while(isNumStart()); prevCmd='c'; break;
+        case 'S': do{ const x2=readNumber(),y2=readNumber(),x=readNumber(),y=readNumber();
+          let x1,y1; if(prevCtrl && /^[CcSs]$/.test(prevCmd)){x1=2*cx-prevCtrl[0]; y1=2*cy-prevCtrl[1];} else {x1=cx;y1=cy;}
+          cubicTo(x1,y1,x2,y2,x,y); prevCtrl=[x2,y2]; cx=x; cy=y;}while(isNumStart()); prevCmd='S'; break;
+        case 's': do{ const x2=cx+readNumber(),y2=cy+readNumber(),x=cx+readNumber(),y=cy+readNumber();
+          let x1,y1; if(prevCtrl && /^[CcSs]$/.test(prevCmd)){x1=2*cx-prevCtrl[0]; y1=2*cy-prevCtrl[1];} else {x1=cx;y1=cy;}
+          cubicTo(x1,y1,x2,y2,x,y); prevCtrl=[x2,y2]; cx=x; cy=y;}while(isNumStart()); prevCmd='s'; break;
+        case 'Q': do{ const x1=readNumber(),y1=readNumber(),x=readNumber(),y=readNumber();
+          quadTo(x1,y1,x,y); prevCtrl=[x1,y1]; cx=x; cy=y;}while(isNumStart()); prevCmd='Q'; break;
+        case 'q': do{ const x1=cx+readNumber(),y1=cy+readNumber(),x=cx+readNumber(),y=cy+readNumber();
+          quadTo(x1,y1,x,y); prevCtrl=[x1,y1]; cx=x; cy=y;}while(isNumStart()); prevCmd='q'; break;
+        case 'T': do{ const x=readNumber(),y=readNumber();
+          let x1,y1; if(prevCtrl && /^[QqTt]$/.test(prevCmd)){x1=2*cx-prevCtrl[0]; y1=2*cy-prevCtrl[1];} else {x1=cx;y1=cy;}
+          quadTo(x1,y1,x,y); prevCtrl=[x1,y1]; cx=x; cy=y;}while(isNumStart()); prevCmd='T'; break;
+        case 't': do{ const x=cx+readNumber(),y=cy+readNumber();
+          let x1,y1; if(prevCtrl && /^[QqTt]$/.test(prevCmd)){x1=2*cx-prevCtrl[0]; y1=2*cy-prevCtrl[1];} else {x1=cx;y1=cy;}
+          quadTo(x1,y1,x,y); prevCtrl=[x1,y1]; cx=x; cy=y;}while(isNumStart()); prevCmd='t'; break;
+        case 'A': do{ const rx=readNumber(),ry=readNumber(),rot=readNumber(),large=readFlag(),sweep=readFlag(),x=readNumber(),y=readNumber();
+          arcTo(rx,ry,rot,large,sweep,x,y); cx=x; cy=y;}while(isNumStart()); prevCmd='A'; break;
+        case 'a': do{ const rx=readNumber(),ry=readNumber(),rot=readNumber(),large=readFlag(),sweep=readFlag(),x=cx+readNumber(),y=cy+readNumber();
+          arcTo(rx,ry,rot,large,sweep,x,y); cx=x; cy=y;}while(isNumStart()); prevCmd='a'; break;
+        case 'Z': case 'z': cx=sx; cy=sy; if(cur) pushPoint(sx,sy); prevCmd='Z'; break;
+        default: i++; break;
+      }
+    }
+    if(cur && cur.length>1) subpaths.push(cur);
+    return subpaths;
+  }
+
+  // ---------------------------------------------------------------
+  // Transform matrices
+  // ---------------------------------------------------------------
+  function multiply(m1,m2){
+    return [
+      m1[0]*m2[0]+m1[2]*m2[1], m1[1]*m2[0]+m1[3]*m2[1],
+      m1[0]*m2[2]+m1[2]*m2[3], m1[1]*m2[2]+m1[3]*m2[3],
+      m1[0]*m2[4]+m1[2]*m2[5]+m1[4], m1[1]*m2[4]+m1[3]*m2[5]+m1[5]
+    ];
+  }
+  function parseTransform(str){
+    let m=[1,0,0,1,0,0];
+    if(!str) return m;
+    const re=/([a-zA-Z]+)\s*\(([^)]*)\)/g;
+    let match;
+    while((match=re.exec(str))){
+      const type=match[1];
+      const args=match[2].trim().split(/[\s,]+/).filter(s=>s.length).map(Number);
+      let mm=[1,0,0,1,0,0];
+      if(type==='translate'){ mm=[1,0,0,1,args[0]||0,args[1]||0]; }
+      else if(type==='scale'){ const sx0=args[0]; const sy0=args.length>1?args[1]:sx0; mm=[sx0,0,0,sy0,0,0]; }
+      else if(type==='rotate'){
+        const a=args[0]*Math.PI/180, cos=Math.cos(a), sin=Math.sin(a);
+        if(args.length>=3){
+          const cx0=args[1], cy0=args[2];
+          mm = multiply([1,0,0,1,cx0,cy0], multiply([cos,sin,-sin,cos,0,0],[1,0,0,1,-cx0,-cy0]));
+        } else mm=[cos,sin,-sin,cos,0,0];
+      }
+      else if(type==='matrix'){ mm=args; }
+      else if(type==='skewX'){ mm=[1,0,Math.tan(args[0]*Math.PI/180),1,0,0]; }
+      else if(type==='skewY'){ mm=[1,Math.tan(args[0]*Math.PI/180),0,1,0,0]; }
+      m = multiply(m, mm);
+    }
+    return m;
+  }
+  function applyMatrix(m,x,y){ return [m[0]*x+m[2]*y+m[4], m[1]*x+m[3]*y+m[5]]; }
+
+  // ---------------------------------------------------------------
+  // Shape primitives -> point arrays
+  // ---------------------------------------------------------------
+  function rectPoints(el){
+    const x=+el.getAttribute('x')||0, y=+el.getAttribute('y')||0;
+    const w=+el.getAttribute('width')||0, h=+el.getAttribute('height')||0;
+    let rxA=el.getAttribute('rx'), ryA=el.getAttribute('ry');
+    let rx = rxA!==null? +rxA : (ryA!==null?+ryA:0);
+    let ry = ryA!==null? +ryA : rx;
+    if(!rx && !ry) return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+    rx=Math.min(rx,w/2); ry=Math.min(ry,h/2);
+    const pts=[];
+    const corner=(cx,cy,a0,a1)=>{ const steps=8; for(let s=0;s<=steps;s++){ const a=a0+(a1-a0)*s/steps; pts.push([cx+rx*Math.cos(a), cy+ry*Math.sin(a)]); } };
+    corner(x+w-rx, y+ry, -Math.PI/2, 0);
+    corner(x+w-rx, y+h-ry, 0, Math.PI/2);
+    corner(x+rx, y+h-ry, Math.PI/2, Math.PI);
+    corner(x+rx, y+ry, Math.PI, Math.PI*1.5);
+    return pts;
+  }
+  function ellipsePoints(cx,cy,rx,ry){
+    const pts=[]; const steps=48;
+    for(let s=0;s<steps;s++){ const a=s/steps*Math.PI*2; pts.push([cx+rx*Math.cos(a), cy+ry*Math.sin(a)]); }
+    return pts;
+  }
+  function polyPoints(el){
+    const raw=(el.getAttribute('points')||'').trim().split(/[\s,]+/).filter(s=>s.length).map(Number);
+    const pts=[];
+    for(let k=0;k+1<raw.length;k+=2) pts.push([raw[k],raw[k+1]]);
+    return pts;
+  }
+
+  function walkSvg(root){
+    const shapes=[];
+    function resolveFill(el){
+      let cur=el;
+      while(cur && cur.nodeType===1){
+        const styleFill = cur.style && cur.style.fill;
+        const attrFill = cur.getAttribute && cur.getAttribute('fill');
+        if(styleFill) return styleFill;
+        if(attrFill) return attrFill;
+        cur=cur.parentElement;
+      }
+      return '#33c7e0';
+    }
+    function isHidden(el){
+      let cur=el;
+      while(cur && cur.nodeType===1){
+        const dd=(cur.style && cur.style.display) || cur.getAttribute('display');
+        if(dd==='none') return true;
+        cur=cur.parentElement;
+      }
+      return false;
+    }
+    function recurse(el, matrix){
+      if(!el || el.nodeType!==1) return;
+      const t = el.getAttribute && el.getAttribute('transform');
+      const m = t ? multiply(matrix, parseTransform(t)) : matrix;
+      const tag = el.tagName ? el.tagName.toLowerCase() : '';
+      if(['path','rect','circle','ellipse','polygon','polyline'].includes(tag)){
+        if(!isHidden(el)){
+          const fill = resolveFill(el);
+          if(fill !== 'none'){
+            let subpaths=[];
+            if(tag==='path') subpaths = parsePathD(el.getAttribute('d')||'');
+            else if(tag==='rect') subpaths = [rectPoints(el)];
+            else if(tag==='circle') subpaths = [ellipsePoints(+el.getAttribute('cx')||0, +el.getAttribute('cy')||0, +el.getAttribute('r')||0, +el.getAttribute('r')||0)];
+            else if(tag==='ellipse') subpaths = [ellipsePoints(+el.getAttribute('cx')||0, +el.getAttribute('cy')||0, +el.getAttribute('rx')||0, +el.getAttribute('ry')||0)];
+            else if(tag==='polygon'||tag==='polyline') subpaths = [polyPoints(el)];
+            subpaths.forEach(pts=>{
+              if(pts.length<3) return;
+              shapes.push({points: pts.map(p=>applyMatrix(m,p[0],p[1])), fill});
+            });
+          }
+        }
+      }
+      if(el.children) for(const child of el.children) recurse(child, m);
+    }
+    recurse(root, [1,0,0,1,0,0]);
+    return shapes;
+  }
+
+  function normalizeShapes(shapes){
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    shapes.forEach(s=>s.points.forEach(([x,y])=>{ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }));
+    const w=maxX-minX, h=maxY-minY;
+    const size=Math.max(w,h)||1;
+    const scale=200/size;
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    return shapes.map(s=>({fill:s.fill, points:s.points.map(([x,y])=>[(x-cx)*scale,(y-cy)*scale])}));
+  }
+
+  // ---------------------------------------------------------------
+  // Color helpers
+  // ---------------------------------------------------------------
+  function parseColorToRGB(str){
+    if(!str || str==='none') return {r:120,g:120,b:160};
+    const d=document.createElement('div');
+    d.style.color=str;
+    document.body.appendChild(d);
+    const cs=getComputedStyle(d).color;
+    document.body.removeChild(d);
+    const m=cs.match(/rgba?\(([^)]+)\)/);
+    if(!m) return {r:120,g:120,b:160};
+    const parts=m[1].split(',').map(s=>parseFloat(s));
+    return {r:parts[0],g:parts[1],b:parts[2]};
+  }
+  function darken(rgb, amt){ return {r:rgb.r*(1-amt), g:rgb.g*(1-amt), b:rgb.b*(1-amt)}; }
+  function rgbStr(rgb){ return `rgb(${Math.round(rgb.r)},${Math.round(rgb.g)},${Math.round(rgb.b)})`; }
+
+  // ---------------------------------------------------------------
+  // Isometric projection
+  // ---------------------------------------------------------------
+  const COS30 = Math.cos(Math.PI/6), SIN30 = 0.5;
+  function project(u,v,z){
+    return { x: (u-v)*COS30, y: (u+v)*SIN30 - z };
+  }
+
+  // ---------------------------------------------------------------
+  // Demo shapes
+  // ---------------------------------------------------------------
+  function starSvgString(){
+    const cx=100, cy=100, rOuter=90, rInner=36, spikes=5;
+    let d='';
+    for(let i0=0;i0<spikes*2;i0++){
+      const r=i0%2===0?rOuter:rInner;
+      const a=-Math.PI/2 + i0*Math.PI/spikes;
+      const x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+      d += (i0===0?'M':'L')+x.toFixed(2)+' '+y.toFixed(2)+' ';
+    }
+    d+='Z';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="${d}" fill="#f2b807"/></svg>`;
+  }
+  const DEMOS = {
+    gift: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect x="20" y="60" width="160" height="120" fill="#33c7e0"/>
+      <rect x="86" y="60" width="28" height="120" fill="#2b46c9"/>
+      <rect x="20" y="60" width="160" height="26" fill="#2b46c9"/>
+    </svg>`,
+    star: starSvgString(),
+    shield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
+      <path d="M100 10 L180 40 L180 120 C180 180 145 215 100 230 C55 215 20 180 20 120 L20 40 Z" fill="#5b6bff"/>
+    </svg>`
+  };
+
+  // ---------------------------------------------------------------
+  // App state + wiring
+  // ---------------------------------------------------------------
+  let currentShapes = [];
+  let lastSvgString = '';
+  let lastViewBox = {w:900,h:700};
+
+  const els = {
+    depth: document.getElementById('depth'),
+    rotation: document.getElementById('rotation'),
+    rightShade: document.getElementById('rightShade'),
+    leftShade: document.getElementById('leftShade'),
+    flatColor: document.getElementById('flatColor'),
+    flatColorPick: document.getElementById('flatColorPick'),
+    bgColor: document.getElementById('bgColor'),
+    transparentBg: document.getElementById('transparentBg'),
+    showShadow: document.getElementById('showShadow'),
+  };
+  const vals = {
+    depthVal: document.getElementById('depthVal'),
+    rotVal: document.getElementById('rotVal'),
+    rightShadeVal: document.getElementById('rightShadeVal'),
+    leftShadeVal: document.getElementById('leftShadeVal'),
+  };
+
+  function loadFromSvgString(str){
+    try{
+      const doc = new DOMParser().parseFromString(str, 'image/svg+xml');
+      if(doc.querySelector('parsererror')) throw new Error('parse error');
+      const root = doc.documentElement;
+      const shapes = walkSvg(root);
+      if(!shapes.length) throw new Error('no shapes');
+      currentShapes = normalizeShapes(shapes);
+      render();
+    }catch(e){
+      document.getElementById('countBadge').textContent = 'Không đọc được SVG';
+    }
+  }
+
+  document.querySelectorAll('[data-demo]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-demo]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('fname').textContent='';
+      loadFromSvgString(DEMOS[btn.dataset.demo]);
+    });
+  });
+
+  document.querySelectorAll('[data-dir]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      els.rotation.value = btn.dataset.dir;
+      syncDirButtons();
+      render();
+    });
+  });
+  function syncDirButtons(){
+    const v = +els.rotation.value;
+    document.querySelectorAll('[data-dir]').forEach(b=>{
+      b.classList.toggle('active', +b.dataset.dir === v);
+    });
+  }
+
+  Object.values(els).forEach(el=> el.addEventListener('input', ()=>{ syncDirButtons(); render(); }));
+
+  // upload
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  uploadBox.addEventListener('click', ()=>fileInput.click());
+  uploadBox.addEventListener('dragover', e=>{ e.preventDefault(); uploadBox.classList.add('dragover'); });
+  uploadBox.addEventListener('dragleave', ()=> uploadBox.classList.remove('dragover'));
+  uploadBox.addEventListener('drop', e=>{
+    e.preventDefault();
+    uploadBox.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  function handleFile(file){
+    const reader = new FileReader();
+    reader.onload = e=>{
+      document.getElementById('fname').textContent = file.name;
+      document.querySelectorAll('[data-demo]').forEach(b=>b.classList.remove('active'));
+      loadFromSvgString(e.target.result);
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------
+  function render(){
+    const depth = (+els.depth.value/100) * 200;
+    const rotDeg = +els.rotation.value;
+    vals.depthVal.textContent = els.depth.value+'%';
+    vals.rotVal.textContent = rotDeg+'°';
+    const rightShade = +els.rightShade.value/100;
+    const leftShade = +els.leftShade.value/100;
+    vals.rightShadeVal.textContent = els.rightShade.value+'%';
+    vals.leftShadeVal.textContent = els.leftShade.value+'%';
+    const useFlat = els.flatColor.checked;
+    const flatColor = els.flatColorPick.value;
+    const bg = els.bgColor.value;
+    const transparentBg = els.transparentBg.checked;
+    const showShadow = els.showShadow.checked;
+
+    if(!currentShapes.length){ document.getElementById('countBadge').textContent='0 mặt'; return; }
+
+    const rot = rotDeg*Math.PI/180, cosR=Math.cos(rot), sinR=Math.sin(rot);
+    function rotUV(u,v){ return [u*cosR - v*sinR, u*sinR + v*cosR]; }
+
+    const topZ = 0, baseZ = -depth;
+    const allProjPts = [];
+    const shapeRenders = [];
+    let faceCount = 0;
+
+    currentShapes.forEach(shape=>{
+      const pts = shape.points.map(([u,v])=>rotUV(u,v));
+      const cx = pts.reduce((a,p)=>a+p[0],0)/pts.length;
+      const cy = pts.reduce((a,p)=>a+p[1],0)/pts.length;
+      const fillColor = useFlat ? flatColor : shape.fill;
+      const rgb = parseColorToRGB(fillColor);
+      const topFill = rgbStr(rgb);
+      const rightFill = rgbStr(darken(rgb, rightShade));
+      const leftFill = rgbStr(darken(rgb, leftShade));
+
+      const walls = [];
+      for(let i0=0;i0<pts.length;i0++){
+        const a = pts[i0], b = pts[(i0+1)%pts.length];
+        const ev = [b[0]-a[0], b[1]-a[1]];
+        let nrm = [ev[1], -ev[0]];
+        const mid = [(a[0]+b[0])/2, (a[1]+b[1])/2];
+        const toMid = [mid[0]-cx, mid[1]-cy];
+        if(nrm[0]*toMid[0]+nrm[1]*toMid[1] < 0) nrm=[-nrm[0],-nrm[1]];
+        const nlen = Math.hypot(nrm[0],nrm[1])||1;
+        const nu=nrm[0]/nlen, nv=nrm[1]/nlen;
+        if(nu+nv <= 0.0001) continue;
+        const shadeFill = nu>nv ? rightFill : leftFill;
+        const topA=project(a[0],a[1],topZ), topB=project(b[0],b[1],topZ);
+        const baseA=project(a[0],a[1],baseZ), baseB=project(b[0],b[1],baseZ);
+        walls.push({pts:[topA,topB,baseB,baseA], fill:shadeFill});
+        allProjPts.push(topA,topB,baseA,baseB);
+      }
+      const topPts = pts.map(([u,v])=>project(u,v,topZ));
+      allProjPts.push(...topPts);
+      faceCount += walls.length + 1;
+      shapeRenders.push({walls, topPts, topFill});
+    });
+
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    allProjPts.forEach(p=>{ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; });
+    if(!isFinite(minX)){ minX=-100;minY=-100;maxX=100;maxY=100; }
+    const pad = Math.max(maxX-minX,maxY-minY)*0.14 + 12;
+    minX-=pad; minY-=pad; maxX+=pad; maxY+=pad;
+    const vbW = maxX-minX, vbH = maxY-minY;
+    lastViewBox = {w:vbW, h:vbH};
+
+    const outW = 900, outH = Math.max(1,Math.round(900*vbH/vbW));
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX.toFixed(2)} ${minY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}" width="${outW}" height="${outH}">`;
+    if(!transparentBg) svg += `<rect x="${minX.toFixed(2)}" y="${minY.toFixed(2)}" width="${vbW.toFixed(2)}" height="${vbH.toFixed(2)}" fill="${bg}"/>`;
+
+    if(showShadow){
+      const shadowRx = (maxX-minX)*0.32, shadowRy = shadowRx*0.28;
+      const shadowCx = (minX+maxX)/2, shadowCy = maxY - pad*0.45;
+      svg += `<ellipse cx="${shadowCx.toFixed(2)}" cy="${shadowCy.toFixed(2)}" rx="${shadowRx.toFixed(2)}" ry="${shadowRy.toFixed(2)}" fill="#000000" fill-opacity="0.28"/>`;
+    }
+
+    shapeRenders.forEach(sr=>{
+      sr.walls.forEach(w=>{
+        svg += `<polygon points="${w.pts.map(p=>p.x.toFixed(2)+','+p.y.toFixed(2)).join(' ')}" fill="${w.fill}"/>`;
+      });
+      svg += `<polygon points="${sr.topPts.map(p=>p.x.toFixed(2)+','+p.y.toFixed(2)).join(' ')}" fill="${sr.topFill}"/>`;
+    });
+    svg += `</svg>`;
+
+    document.getElementById('stageWrap').innerHTML = svg;
+    lastSvgString = svg;
+    document.getElementById('countBadge').textContent = faceCount+' mặt';
+  }
+
+  // ---------------------------------------------------------------
+  // Export
+  // ---------------------------------------------------------------
+  document.getElementById('exportSvg').addEventListener('click', ()=>{
+    if(!lastSvgString) return;
+    const blob = new Blob([lastSvgString], {type:'image/svg+xml'});
+    const link = document.createElement('a');
+    link.download = 'isometric-extrude.svg';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+  });
+
+  document.getElementById('exportPng').addEventListener('click', ()=>{
+    if(!lastSvgString) return;
+    const scale = 2;
+    const w = Math.round(900*scale), h = Math.round(900*scale*lastViewBox.h/lastViewBox.w);
+    const img = new Image();
+    const svgBlob = new Blob([lastSvgString], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      const link = document.createElement('a');
+      link.download = 'isometric-extrude.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = url;
+  });
+
+  // init
+  loadFromSvgString(DEMOS.gift);
+})();
+</script>
+</body>
+</html>
