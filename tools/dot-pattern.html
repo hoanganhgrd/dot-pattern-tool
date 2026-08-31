@@ -4,20 +4,24 @@
 <meta charset="UTF-8">
 <title>Dot Pattern Generator — Everfit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0E0E0E;
-    --panel:#161616;
-    --panel-2:#1D1D1D;
-    --line:#2A2A2A;
-    --accent:#C8F135;
-    --text:#F2F2F0;
-    --text-dim:#8C8C8C;
+    --bg:oklch(0 0 0);
+    --panel:oklch(0.205 0 0);
+    --panel-2:#262626;
+    --line:oklch(0.311 0.013 279.19);
+    --accent:#0c8ce9;
+    --accent-foreground:oklch(0.985 0 0);
+    --text:oklch(0.977 0 0);
+    --text-dim:oklch(0.708 0 0);
+    --radius-sm:.25rem;
+    --radius-md:.375rem;
+    --radius-lg:.5rem;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;height:100%;}
-  h1,h2,h3,.label-head{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',ui-sans-serif,sans-serif;height:100%;}
+  h1,h2,h3,.label-head{font-family:'Inter',ui-sans-serif,sans-serif;}
   .app{display:flex;height:100vh;min-height:640px;}
 
   /* ---------- Sidebar ---------- */
@@ -28,30 +32,30 @@
     overflow-y:auto;
   }
   .sidebar-header{padding:22px 20px 14px;border-bottom:1px solid var(--line);}
-  .sidebar-header h1{font-size:22px;font-weight:700;margin:0 0 2px;color:var(--text);}
-  .sidebar-header p{margin:0;font-size:12px;color:var(--text-dim);letter-spacing:.03em;}
+  .sidebar-header h1{font-size:20px;font-weight:600;margin:0 0 2px;color:var(--text);letter-spacing:-.01em;}
+  .sidebar-header p{margin:0;font-size:12px;color:var(--text-dim);letter-spacing:.01em;}
 
   .section{padding:18px 20px;border-bottom:1px solid var(--line);}
-  .section h3{font-size:13px;font-weight:600;color:var(--accent);margin:0 0 12px;letter-spacing:.06em;}
+  .section h3{font-size:11px;font-weight:500;color:var(--text-dim);margin:0 0 12px;letter-spacing:.02em;text-transform:none;}
 
   .upload-box{
-    border:1.5px dashed var(--line);border-radius:8px;padding:18px;text-align:center;
+    border:1.5px dashed var(--line);border-radius:var(--radius-md);padding:18px;text-align:center;
     cursor:pointer;transition:border-color .15s ease, background .15s ease;
     font-size:12.5px;color:var(--text-dim);
   }
-  .upload-box:hover{border-color:var(--accent);background:rgba(200,241,53,0.04);}
-  .upload-box.dragover{border-color:var(--accent);background:rgba(200,241,53,0.08);color:var(--text);}
+  .upload-box:hover{border-color:var(--accent);background:color-mix(in oklab, var(--accent) 6%, transparent);}
+  .upload-box.dragover{border-color:var(--accent);background:color-mix(in oklab, var(--accent) 10%, transparent);color:var(--text);}
   .upload-box input{display:none;}
   .upload-box .fname{margin-top:6px;color:var(--accent);font-weight:600;word-break:break-all;}
 
   .shape-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
   .shape-btn{
-    flex:1;min-width:60px;padding:7px 4px;font-size:11px;border-radius:6px;
+    flex:1;min-width:60px;padding:7px 4px;font-size:11px;border-radius:var(--radius-sm);
     background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
-    cursor:pointer;font-family:'Barlow',sans-serif;font-weight:500;transition:.12s;
+    cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;transition:.12s;
   }
   .shape-btn:hover{color:var(--text);border-color:#444;}
-  .shape-btn.active{background:var(--accent);color:#0E0E0E;border-color:var(--accent);font-weight:600;}
+  .shape-btn.active{background:var(--accent);color:var(--accent-foreground);border-color:var(--accent);font-weight:600;}
 
   .field{margin-bottom:14px;}
   .field:last-child{margin-bottom:0;}
@@ -63,10 +67,10 @@
   }
   input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
-    background:var(--accent);cursor:pointer;border:2px solid #0E0E0E;
+    background:var(--accent);cursor:pointer;border:2px solid var(--bg);
   }
   input[type=range]::-moz-range-thumb{
-    width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #0E0E0E;
+    width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);
   }
 
   .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -76,26 +80,26 @@
   .switch input{opacity:0;width:0;height:0;}
   .slider-pill{position:absolute;inset:0;background:var(--line);border-radius:20px;cursor:pointer;transition:.15s;}
   .slider-pill:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--text-dim);border-radius:50%;transition:.15s;}
-  .switch input:checked + .slider-pill{background:rgba(200,241,53,0.25);}
+  .switch input:checked + .slider-pill{background:color-mix(in oklab, var(--accent) 25%, transparent);}
   .switch input:checked + .slider-pill:before{transform:translateX(16px);background:var(--accent);}
 
   .color-row{display:flex;gap:10px;}
   .color-field{flex:1;}
   .color-field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;}
   .swatch{
-    width:100%;height:32px;border-radius:6px;border:1px solid var(--line);cursor:pointer;padding:0;
+    width:100%;height:32px;border-radius:var(--radius-sm);border:1px solid var(--line);cursor:pointer;padding:0;
   }
 
   .grid-row{display:flex;gap:6px;}
   .grid-row .shape-btn{flex:1;}
 
   .btn{
-    width:100%;padding:11px;border-radius:7px;border:none;cursor:pointer;
-    font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px;
-    letter-spacing:.04em;text-transform:uppercase;transition:.12s;
+    width:100%;padding:9px 11px;border-radius:var(--radius-md);border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-weight:500;font-size:13px;
+    letter-spacing:normal;text-transform:none;transition:.12s;
   }
-  .btn-primary{background:var(--accent);color:#0E0E0E;}
-  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary{background:var(--accent);color:var(--accent-foreground);}
+  .btn-primary:hover{filter:brightness(1.1);}
   .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--text);margin-top:8px;}
   .btn-secondary:hover{border-color:var(--text-dim);}
   .btn-row{display:flex;gap:8px;}
@@ -103,7 +107,7 @@
 
   /* ---------- Canvas area ---------- */
   .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:
-    radial-gradient(circle at 50% 40%, #121212 0%, #0A0A0A 100%);
+    radial-gradient(circle at 50% 40%, #0a0a0a 0%, #000 100%);
     overflow:hidden;
   }
   #previewCanvas{max-width:92%;max-height:88%;display:block;}
@@ -120,7 +124,8 @@
 </style>
 </head>
 <body>
-<a href="../index.html" title="Back to ToolCraft hub" style="position:fixed;top:10px;left:10px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#0E0E0E;color:#C8F135;font:600 11px/1 'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;border:1px solid #2A2A2A;border-radius:20px;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.4);">&larr; Hub</a>
+<a href="../index.html" title="Back to ToolCraft hub" style="position:fixed;top:10px;left:10px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:oklch(0.205 0 0);color:#0c8ce9;font:500 12px/1 'Inter',sans-serif;border:1px solid oklch(0.311 0.013 279.19);border-radius:8px;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.4);">&larr; Hub</a>
+
 <div class="app">
 
   <div class="sidebar">
@@ -286,7 +291,7 @@
     c.fillStyle = '#fff';
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.font = '700 720px Barlow Condensed, sans-serif';
+    c.font = '700 720px Inter, sans-serif';
     c.fillText('F', CANVAS_W/2, CANVAS_H/2 + 40);
   }
 
